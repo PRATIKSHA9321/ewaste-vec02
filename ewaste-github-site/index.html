@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EWASTE ENVIRONMENTAL MANAGEMENT(VEC02)</title>
+<style>
+:root{--bg:#f4f7f4;--card:#fff;--tx:#1b2a1f;--mut:#667a6b;--ac:#1f7a4d;--bd:#d9e4dc;--warn:#b7791f}
+@media (prefers-color-scheme:dark){:root{--bg:#121a15;--card:#1b2620;--tx:#e8f1ea;--mut:#9bb0a1;--ac:#4cc38a;--bd:#2d3d33;--warn:#e0b050}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:clamp(1.2rem,4vw,1.8rem);margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 14px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 16px;flex:1;min-width:130px}
+.stat b{display:block;font-size:1.3rem;color:var(--ac)}
+.bar{height:8px;background:var(--bd);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;background:var(--ac)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.num{font-weight:700;color:var(--ac)}
+.tag{font-size:.75rem;padding:2px 9px;border-radius:99px;border:1px solid var(--bd);color:var(--mut)}
+.tag.ok{color:var(--ac);border-color:var(--ac)}.tag.wait{color:var(--warn);border-color:var(--warn)}
+.title{font-weight:600}
+.item{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.file{font-size:.85rem;color:var(--mut);word-break:break-all}
+input[type=text],input[type=number],textarea{width:100%;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+button,.btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:7px 12px;font:inherit;font-size:.9rem;cursor:pointer;text-decoration:none;white-space:nowrap}
+button.ghost,.btn.ghost{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+.marks{border-top:1px dashed var(--bd);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:8px;align-items:center}
+.score{font-weight:700}
+.note{font-size:.85rem;color:var(--mut);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-top:16px}
+@media print{.tools,.note,.btn,button{display:none}}
+</style></head><body>
+<div class="wrap">
+<h1 id="course"></h1>
+<p class="sub">Assignment submission &amp; marking dashboard</p>
+<div class="stat" style="margin-bottom:12px"><b id="sname" style="font-size:1.1rem"></b><span id="sroll"></span></div>
+<div class="stats">
+<div class="stat"><b id="sUp"></b>Submitted</div>
+<div class="stat"><b id="sMk"></b>Marked</div>
+<div class="stat"><b id="sTot"></b>Total marks</div>
+</div>
+<div class="bar"><i id="prog"></i></div>
+<div class="tools" id="tools"></div>
+<div class="grid" id="grid"></div>
+<div class="note" id="note"></div>
+</div>
+<script src="data.js"></script>
+<script>
+const MAXDEF=10, LS='ewaste_marks_v1';
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+let published={},local={},teacher=false;
+try{local=JSON.parse(localStorage.getItem(LS)||'{}')}catch(e){}
+$('course').textContent=COURSE;document.title=COURSE;
+$('sname').textContent=STUDENT.name;$('sroll').textContent='Roll No.: '+STUDENT.roll;
+const mk=id=>Object.assign({},published[id]||{},local[id]||{});
+function render(){
+  const g=$('grid');g.textContent='';
+  let up=0,mked=0,tot=0,max=0;
+  ASSIGNMENTS.forEach(a=>{
+    const m=mk(a.id),has=a.files.length||a.links.length,done=typeof m.marks==='number';
+    if(has)up++;
+    if(done){mked++;tot+=m.marks;max+=m.max||MAXDEF}
+    const c=el('div','card'),top=el('div','top');
+    top.append(el('span','num','Assignment '+a.id));
+    const st=done?['Marked','ok']:has?['Awaiting marks','wait']:['Not submitted',''];
+    top.append(el('span','tag '+st[1],st[0]));c.append(top);
+    c.append(el('div','title',a.title||'Assignment '+a.id));
+    a.files.forEach(f=>{
+      const r=el('div','item');r.append(el('span','file','📎 '+f.name));
+      const l=el('a','btn ghost','Open');l.href=f.path;l.target='_blank';l.rel='noopener';r.append(l);c.append(r);
+    });
+    a.links.forEach(u=>{
+      const r=el('div','item');let nm=u;try{const x=new URL(u);nm=x.hostname+(x.pathname.length>1?x.pathname.slice(0,18)+'…':'')}catch(e){}
+      r.append(el('span','file','🔗 '+nm));
+      const l=el('a','btn ghost','Open');l.href=u;l.target='_blank';l.rel='noopener';r.append(l);c.append(r);
+    });
+    if(!has)c.append(el('div','file','Nothing submitted yet.'));
+    if(teacher){
+      const b=el('div','marks'),r=el('div','row');
+      const s=el('input');s.type='number';s.min=0;s.placeholder='Marks';s.value=done?m.marks:'';s.style.width='85px';
+      const x=el('input');x.type='number';x.min=1;x.value=m.max||MAXDEF;x.style.width='85px';
+      r.append(s,el('span',null,'/'),x);
+      const rm=el('textarea');rm.rows=2;rm.placeholder='Remarks';rm.value=m.remarks||'';
+      const sv=el('button',null,'Save marks');
+      sv.onclick=()=>{local[a.id]={marks:s.value===''?null:Number(s.value),max:Number(x.value)||MAXDEF,remarks:rm.value};
+        try{localStorage.setItem(LS,JSON.stringify(local))}catch(e){}render()};
+      b.append(r,rm,sv);c.append(b);
+    }else if(done){
+      const b=el('div','marks');b.append(el('div','score','Marks: '+m.marks+' / '+(m.max||MAXDEF)));
+      if(m.remarks)b.append(el('div','file','Remarks: '+m.remarks));c.append(b);
+    }
+    g.append(c);
+  });
+  const n=ASSIGNMENTS.length;
+  $('sUp').textContent=up+' / '+n;$('sMk').textContent=mked+' / '+n;
+  $('sTot').textContent=mked?tot+' / '+max:'–';$('prog').style.width=(up/n*100)+'%';
+  const t=$('tools');t.textContent='';
+  const tb=el('button','ghost',teacher?'Exit marking mode':'Teacher: marking mode');
+  tb.onclick=()=>{teacher=!teacher;render()};t.append(tb);
+  if(teacher){
+    const dl=el('button',null,'Download marks.json');
+    dl.onclick=()=>{const all={};ASSIGNMENTS.forEach(a=>{const m=mk(a.id);if(typeof m.marks==='number')all[a.id]=m});
+      const u=URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:'application/json'}));
+      const a=el('a');a.href=u;a.download='marks.json';a.click()};
+    const pr=el('button','ghost','Print / Save as PDF');pr.onclick=()=>window.print();
+    t.append(dl,pr);
+  }
+  $('note').textContent=teacher
+    ?'Marks are saved in this browser only. Press “Download marks.json” and send that file to the student, who uploads it to the GitHub repository so everyone can see the marks.'
+    :'Click Open to view a submitted file. PowerPoint and Excel files will download.';
+}
+fetch('marks.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).then(j=>{published=j||{};render()}).catch(()=>render());
+render();
+</script></body></html>
